@@ -1,15 +1,4 @@
-'use client';
-
-import { usePathname } from 'next/navigation';
-
-const FULLSCREEN_ROUTES = ['/order-status'];
-
 export function ShellWrapper({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  const isFullscreen = FULLSCREEN_ROUTES.some(r => pathname.startsWith(r));
-
-  if (isFullscreen) return <>{children}</>;
-
   return (
     <>
       <main className="flex-1 pt-[72px] sm:pt-[108px]">{children}</main>
@@ -40,8 +29,6 @@ export function ShellWrapper({ children }: { children: React.ReactNode }) {
                 {[
                   { href: '/menu',      label: 'Menu' },
                   { href: '/cart',      label: 'Cart' },
-                  { href: '/my-orders', label: 'My Orders' },
-                  { href: '/login',     label: 'Sign In' },
                 ].map(({ href, label }) => (
                   <a
                     key={href}

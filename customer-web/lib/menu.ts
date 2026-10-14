@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { MENU_ITEMS } from '@/lib/menuData';
 import type {
   Category,
   MenuCard,
@@ -46,18 +46,9 @@ function cleanName(name: string): string {
     .trim();
 }
 
-/** Fetch all available menu items from Supabase, ordered for display. */
-export async function fetchMenuItems(): Promise<MenuItem[]> {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .from('menu_items')
-    .select('*')
-    .eq('available', true)
-    .order('category', { ascending: true })
-    .order('sort_order', { ascending: true });
-
-  if (error) throw new Error(`Failed to load menu: ${error.message}`);
-  return (data ?? []) as MenuItem[];
+/** All available menu items, ordered for display. Static — no backend. */
+export function getMenuItems(): MenuItem[] {
+  return MENU_ITEMS.filter(i => i.available);
 }
 
 /**

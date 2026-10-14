@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useCart } from '@/store/cart';
 import { formatPKR } from '@/lib/format';
+import { whatsappOrderUrl } from '@/lib/whatsapp';
 
 export default function CartPage() {
   const { lines, setQuantity, removeLine, totalPrice } = useCart();
@@ -112,9 +113,14 @@ export default function CartPage() {
           <Link href="/menu" className="font-heading text-xs tracking-widest text-muted hover:text-primary transition-colors flex items-center gap-1">
             ← ADD MORE
           </Link>
-          <Link href="/checkout" className="inline-flex items-center gap-2 bg-brand-red text-white font-heading text-sm px-8 sm:px-10 py-3 sm:py-4 tracking-widest hover:bg-primary hover:text-surface transition-colors duration-200">
-            CHECKOUT →
-          </Link>
+          <a
+            href={whatsappOrderUrl(lines)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 bg-brand-red text-white font-heading text-sm px-8 sm:px-10 py-3 sm:py-4 tracking-widest hover:bg-primary hover:text-surface transition-colors duration-200"
+          >
+            ORDER VIA WHATSAPP →
+          </a>
         </div>
       </div>
     </div>

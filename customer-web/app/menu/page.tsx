@@ -1,38 +1,20 @@
-import { fetchMenuItems, buildMenuCards } from '@/lib/menu';
+import { getMenuItems, buildMenuCards } from '@/lib/menu';
 import { getMenuCategories, categoryLabel } from '@/lib/menuCategories';
 import { MenuBrowser } from '@/components/MenuBrowser';
 
-export const dynamic = 'force-dynamic';
-
-export default async function MenuPage({
+export default function MenuPage({
   searchParams,
 }: {
   searchParams: { category?: string };
 }) {
-  const cats = await getMenuCategories();
+  const cats = getMenuCategories();
   const categoryNames = cats.map(c => c.name);
   const labels = Object.fromEntries(cats.map(c => [c.name, categoryLabel(c)]));
 
   const rawCat = searchParams.category;
   const initialCategory = rawCat && categoryNames.includes(rawCat) ? rawCat : undefined;
 
-  let cards;
-  try {
-    const items = await fetchMenuItems();
-    cards = buildMenuCards(items);
-  } catch (e) {
-    return (
-      <div className="mx-auto max-w-7xl px-6 py-24 text-center">
-        <h1 className="text-3xl text-brand-red">Menu unavailable</h1>
-        <p className="mt-3 text-muted text-sm">
-          We couldn&apos;t load the menu right now. Please try again shortly.
-        </p>
-        <p className="mt-2 text-xs text-muted/60">
-          {e instanceof Error ? e.message : 'Unknown error'}
-        </p>
-      </div>
-    );
-  }
+  const cards = buildMenuCards(getMenuItems());
 
   // Include any category still present on an item, so a renamed or removed
   // category never leaves items unreachable from the tabs.

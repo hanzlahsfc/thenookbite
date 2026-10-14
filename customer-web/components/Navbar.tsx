@@ -7,31 +7,17 @@ import { usePathname } from 'next/navigation';
 import { useCart } from '@/store/cart';
 import { useFlyToCart } from '@/components/FlyToCart';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { createClient } from '@/lib/supabase/client';
-import type { User } from '@supabase/supabase-js';
-
-const FULLSCREEN_ROUTES = ['/order-status'];
 
 export function Navbar() {
   const pathname = usePathname();
-  if (FULLSCREEN_ROUTES.some(r => pathname.startsWith(r))) return null;
   const totalItems = useCart((s) => s.totalItems());
   const { registerTarget } = useFlyToCart();
   const cartRef = useRef<HTMLAnchorElement>(null);
   const [mounted, setMounted] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
-      setUser(session?.user ?? null);
-    });
-    return () => subscription.unsubscribe();
-  }, []);
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => registerTarget(cartRef.current), [registerTarget]);
 
@@ -47,11 +33,6 @@ export function Navbar() {
     else document.body.style.overflow = '';
     return () => { document.body.style.overflow = ''; };
   }, [menuOpen]);
-
-  const profileLink = mounted && user
-    ? { href: '/my-orders', label: 'MY ORDERS' }
-    : { href: '/login',     label: 'SIGN IN' };
-  const showProfile = mounted && !!user;
 
   return (
     <>
@@ -87,10 +68,7 @@ export function Navbar() {
           <nav className="hidden md:flex items-center gap-1">
             {[
               { href: '/menu',           label: 'MENU' },
-              { href: '/careers',        label: 'CAREERS' },
               { href: '/cart',           label: 'CART', ref: cartRef },
-              { href: profileLink.href,  label: profileLink.label },
-              ...(showProfile ? [{ href: '/profile', label: 'PROFILE' }] : []),
             ].map((item) => {
               const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
               return (
@@ -166,10 +144,7 @@ export function Navbar() {
           >
             {[
               { href: '/menu',          label: 'MENU' },
-              { href: '/careers',       label: 'CAREERS' },
               { href: '/cart',          label: mounted && totalItems > 0 ? `CART (${totalItems})` : 'CART' },
-              { href: profileLink.href, label: profileLink.label },
-              ...(showProfile ? [{ href: '/profile', label: 'PROFILE' }] : []),
             ].map((item) => {
               const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
               return (
