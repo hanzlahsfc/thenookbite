@@ -31,19 +31,10 @@ function LoginForm() {
       return;
     }
 
-    const verifyRes = await fetch('/api/admin/verify');
-    const { isAdmin } = await verifyRes.json();
-    if (isAdmin) {
-      await supabase.auth.signOut();
-      setError('Admin accounts cannot log in here. Use the admin panel.');
-      setLoading(false);
-      return;
-    }
-
     const { data: staffRow } = await supabase.from('staff').select('id').eq('id', data.user.id).maybeSingle();
     if (staffRow) {
       await supabase.auth.signOut();
-      setError('Staff accounts must use the POS terminal to sign in.');
+      setError('This account cannot sign in here.');
       setLoading(false);
       return;
     }

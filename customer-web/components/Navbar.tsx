@@ -10,7 +10,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 
-const FULLSCREEN_ROUTES = ['/kitchen', '/pos', '/order-status', '/verify'];
+const FULLSCREEN_ROUTES = ['/order-status'];
 
 export function Navbar() {
   const pathname = usePathname();

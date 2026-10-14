@@ -54,9 +54,6 @@ export function ProfileClient({
 
   async function handleSignOut() {
     setSigningOut(true);
-    // Harmless for customers (matches no rows), but covers staff who happen to
-    // sign out from here rather than the POS
-    await fetch('/api/pos/session/close', { method: 'POST' }).catch(() => {});
     await createClient().auth.signOut();
     router.push('/');
     router.refresh();

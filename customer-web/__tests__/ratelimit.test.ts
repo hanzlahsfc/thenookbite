@@ -16,7 +16,7 @@ describe('Rate limiter graceful degradation', () => {
     } as unknown as Request;
 
     // @ts-expect-error minimal mock
-    const result = await checkRateLimit(mockReq, 'checkin');
+    const result = await checkRateLimit(mockReq, 'order');
     expect(result).toBeNull(); // null = allowed through
   });
 });

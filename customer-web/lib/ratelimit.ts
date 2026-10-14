@@ -16,16 +16,12 @@ function makeRatelimiter(requests: number, windowSeconds: number) {
 }
 
 // Pre-built limiters
-const checkInLimiter   = makeRatelimiter(5, 60);   // 5 check-in attempts / min per IP
 const orderLimiter     = makeRatelimiter(30, 60);  // 30 order creates / min per IP
-const lookupLimiter    = makeRatelimiter(20, 60);  // 20 customer-lookup calls / min per IP
 
-export type LimiterKey = 'checkin' | 'order' | 'lookup';
+export type LimiterKey = 'order';
 
 const limiters: Record<LimiterKey, ReturnType<typeof makeRatelimiter>> = {
-  checkin: checkInLimiter,
   order:   orderLimiter,
-  lookup:  lookupLimiter,
 };
 
 export async function checkRateLimit(req: NextRequest, key: LimiterKey): Promise<NextResponse | null> {
