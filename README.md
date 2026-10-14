@@ -1,13 +1,13 @@
-# TNB (The Nook Bite) — Restaurant Ordering System
+# TNB (The Nook Bite) — Customer Ordering Website
 
-Full-stack online ordering system for **The Nook Bite** — a local Pakistani restaurant in Mandi Bahauddin.
+Full-stack online ordering site for **The Nook Bite** — a local Pakistani restaurant in Mandi Bahauddin. This repo contains the customer-facing website only.
 
 ## Project Structure
 
 ```
-/Thenookbite
-  /customer-web      → Next.js 14 — customer site + all API routes + admin panel + kitchen display
-  /db                → schema.sql + seed.sql
+/thenookbite
+  /customer-web      → Next.js 14 — customer site + API routes
+  /db                → schema.sql + seed.sql + migrations
   CLAUDE.md          → full spec and coding rules
   MILESTONES.md      → sprint plan
 ```
@@ -20,23 +20,33 @@ Full-stack online ordering system for **The Nook Bite** — a local Pakistani re
 | Backend | Next.js API Routes (no separate server) |
 | Database | Supabase (Postgres) |
 | Auth | Supabase Auth |
-| Realtime | Supabase Realtime (kitchen + admin live updates) |
-| Storage | Supabase Storage (menu item images) |
-| Deployment | Hostinger Node.js hosting |
+| Realtime | Supabase Realtime (live order status updates) |
+| Images | Unsplash + `public/` assets; `next/image` optimized |
+| Deployment | Vercel |
 
-## Apps (all inside `/customer-web`)
+## Pages
 
-| URL | Description |
+| Route | Description |
 |---|---|
-| `thenookbite.com` | Customer ordering site |
-| `admin.thenookbite.com` | Owner admin panel (subdomain routing via middleware) |
-| `kitchen.thenookbite.com` | Kitchen display screen (subdomain routing via middleware) |
+| `/` | Homepage — hero, deals, category grid |
+| `/menu` | Full menu with category filter + search |
+| `/cart` | Cart review |
+| `/checkout` | Name, phone, notes, payment method |
+| `/order-confirmation` | Success page with order ID |
+| `/order-status` | Live order tracking |
+| `/my-orders` | Order history (logged in) |
+| `/login`, `/signup`, `/forgot-password` | Auth |
+| `/profile` | Customer profile |
+| `/careers` | Job application form |
 
 ## Database Setup
 
 1. Create a Supabase project
 2. SQL Editor → run [db/schema.sql](db/schema.sql)
-3. SQL Editor → run [db/seed.sql](db/seed.sql) — loads all 139 menu items
+3. SQL Editor → run [db/all_migrations.sql](db/all_migrations.sql) — safe to run on a fresh DB
+4. SQL Editor → run [db/seed.sql](db/seed.sql) — loads all 139 menu items
+
+Menu item images resolve automatically by item name via `customer-web/lib/itemImages.ts` — no image uploads needed.
 
 ## Run Locally
 
@@ -46,77 +56,48 @@ cp .env.example .env.local
 # fill in .env.local — see below
 npm install
 npm run dev
-# customer site  → http://localhost:3000
-# admin panel    → http://localhost:3000/admin
-# kitchen        → http://localhost:3000/kitchen
+# → http://localhost:3000
 ```
 
 ## Environment Variables
 
-Create `customer-web/.env.local`:
+Create `customer-web/.env.local` (see `.env.example`):
 
 ```env
-# Supabase
+# Supabase (required)
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_KEY=        # service_role key — server only, never exposed to browser
 
-# Admin
+# Order + careers notifications
 ADMIN_EMAIL=owner@thenookbite.com
-NEXT_PUBLIC_ADMIN_EMAIL=owner@thenookbite.com
+RESEND_API_KEY=              # optional — careers form email
+EMAIL_DOMAIN=thenookbite.com
+
+# Optional — rate limiting via Upstash (skipped when unset)
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
+
+# Optional — Sentry error monitoring
+NEXT_PUBLIC_SENTRY_DSN=
 ```
 
-> `NEXT_PUBLIC_*` vars are inlined at build time — rebuild after changing them.
+> `NEXT_PUBLIC_*` vars are inlined at build time — rebuild/redeploy after changing them.
 
-## Deploy to Hostinger (Node.js Hosting)
+## Deploy to Vercel
 
-1. Build:
-   ```bash
-   cd customer-web
-   npm install
-   npm run build
-   ```
+1. Import this repo at [vercel.com/new](https://vercel.com/new)
+2. **Root Directory:** set to `customer-web` (Project Settings → General)
+3. Add the environment variables above (Project Settings → Environment Variables)
+4. Deploy — Vercel auto-detects Next.js, no other config needed
 
-2. In Hostinger hPanel → Node.js → Create Application:
-   - Node version: **18 or 20**
-   - Application root: `customer-web`
-   - Startup file: `start.js`
-
-3. Upload via FTP or File Manager:
-   ```
-   .next/
-   public/
-   node_modules/
-   package.json
-   start.js
-   ```
-
-4. Add environment variables in hPanel → Node.js → Environment (same as `.env.local` above)
-
-5. In Hostinger → Subdomains:
-   - `admin.thenookbite.com` → point to same Node.js app
-   - `kitchen.thenookbite.com` → point to same Node.js app
-
-6. Start the app — middleware handles subdomain routing automatically
+> The Supabase env vars must be present at build time — prerendering pages fails without them.
 
 ## Uptime (prevent Supabase free tier sleep)
 
 Set up a free monitor on [uptimerobot.com](https://uptimerobot.com):
-- URL: `https://thenookbite.com/api/menu`
+- URL: `https://your-domain.com/api/menu`
 - Interval: every 5 minutes
-
-## Admin Panel
-
-Visit `admin.thenookbite.com` (or `localhost:3000/admin` in dev).
-
-| Route | Description |
-|---|---|
-| `/admin/login` | Owner sign in |
-| `/admin` | Dashboard — today's orders + revenue |
-| `/admin/orders` | Live order board with realtime updates |
-| `/admin/orders/[id]` | Order detail + update status |
-| `/admin/menu` | All menu items — toggle available/sold out |
-| `/admin/menu/[id]` | Edit item name, price, description, image, deal |
 
 ## API Routes
 
@@ -124,11 +105,12 @@ All backend logic lives in `customer-web/app/api/`:
 
 | Method | Route | Description |
 |---|---|---|
-| GET | `/api/menu` | All available menu items |
-| PATCH | `/api/menu/[id]` | Update item details |
-| PATCH | `/api/menu/[id]/availability` | Toggle available |
+| GET | `/api/menu` | Available menu items (filter: `?category=`) |
 | POST | `/api/orders` | Create order |
-| GET | `/api/orders` | List orders |
 | GET | `/api/orders/[id]` | Single order |
-| PATCH | `/api/orders/[id]/status` | Update order status |
+| GET | `/api/orders/[id]/items` | Order line items |
+| PATCH | `/api/orders/[id]/status` | Update status (e.g. customer cancel) |
+| GET | `/api/display` | Public preparing/ready board |
 | GET | `/api/me` | Current user profile |
+| POST | `/api/careers` | Job application (emails owner via Resend) |
+| GET | `/api/health` | Health check |
