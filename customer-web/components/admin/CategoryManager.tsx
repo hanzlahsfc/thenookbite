@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { MenuItem } from '@/lib/types';
 import type { MenuCategory } from '@/lib/menuCategories';
 import { getSupabase } from '@/lib/supabase';
+import { uploadMenuImage } from '@/lib/storage';
 
 interface CatForm {
   name: string;
@@ -25,6 +26,7 @@ export function CategoryManager() {
   const [editingId, setEditingId] = useState<string | 'new' | null>(null);
   const [originalName, setOriginalName] = useState('');
   const [form, setForm] = useState<CatForm>(emptyForm);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
 
   const sb = getSupabase();
@@ -59,6 +61,7 @@ export function CategoryManager() {
       image_url: c.image_url ?? '',
       sort_order: String(c.sort_order),
     });
+    setImageFile(null);
     setError('');
   }
 
@@ -71,9 +74,19 @@ export function CategoryManager() {
     }
     setSaving(true);
     setError('');
+    let imageUrl = form.image_url || null;
+    if (imageFile) {
+      try {
+        imageUrl = await uploadMenuImage(imageFile);
+      } catch (err) {
+        setError(`Image upload failed: ${err instanceof Error ? err.message : 'unknown error'}`);
+        setSaving(false);
+        return;
+      }
+    }
     const fields = {
       display_label: form.display_label.trim() || null,
-      image_url: form.image_url.trim() || null,
+      image_url: imageUrl,
       sort_order: parseInt(form.sort_order, 10) || 0,
     };
 
@@ -127,7 +140,7 @@ export function CategoryManager() {
 
       <div className="flex justify-end mb-5">
         <button
-          onClick={() => { setEditingId('new'); setForm({ ...emptyForm, sort_order: String(categories.length + 1) }); setError(''); }}
+          onClick={() => { setEditingId('new'); setForm({ ...emptyForm, sort_order: String(categories.length + 1) }); setImageFile(null); setError(''); }}
           className="bg-brand-red text-white font-heading text-sm px-6 py-2.5 tracking-widest rounded-sm hover:bg-primary hover:text-surface transition-colors"
         >
           + ADD CATEGORY
@@ -149,8 +162,22 @@ export function CategoryManager() {
               <input value={form.display_label} onChange={e => setForm(f => ({ ...f, display_label: e.target.value }))} placeholder="e.g. Pizza Classic" className={inputClass} />
             </div>
             <div>
-              <label className="block text-xs text-muted mb-1 tracking-wide">IMAGE URL</label>
-              <input value={form.image_url} onChange={e => setForm(f => ({ ...f, image_url: e.target.value }))} placeholder="https://…" className={inputClass} />
+              <label className="block text-xs text-muted mb-1 tracking-wide">IMAGE</label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={e => setImageFile(e.target.files?.[0] ?? null)}
+                  className="text-sm text-muted file:mr-3 file:border file:border-theme file:rounded-sm file:bg-surface file:px-3 file:py-2 file:font-heading file:text-xs file:tracking-widest file:text-primary hover:file:border-brand-red file:cursor-pointer"
+                />
+                {(imageFile || form.image_url) && (
+                  <img
+                    src={imageFile ? URL.createObjectURL(imageFile) : form.image_url}
+                    alt="Preview"
+                    className="h-12 w-12 object-cover rounded-sm border border-theme flex-shrink-0"
+                  />
+                )}
+              </div>
             </div>
             <div>
               <label className="block text-xs text-muted mb-1 tracking-wide">SORT ORDER</label>

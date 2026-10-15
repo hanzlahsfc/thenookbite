@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { MenuItem } from '@/lib/types';
 import type { MenuCategory } from '@/lib/menuCategories';
 import { getSupabase } from '@/lib/supabase';
+import { uploadMenuImage } from '@/lib/storage';
 import { formatPKR } from '@/lib/format';
 
 interface ItemForm {
@@ -40,6 +41,7 @@ export function MenuManager() {
   const [catFilter, setCatFilter] = useState('All');
   const [editingId, setEditingId] = useState<string | 'new' | null>(null);
   const [form, setForm] = useState<ItemForm>(emptyForm);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
 
   const sb = getSupabase();
@@ -84,6 +86,7 @@ export function MenuManager() {
       image_url: item.image_url ?? '',
       available: item.available,
     });
+    setImageFile(null);
     setError('');
   }
 
@@ -96,6 +99,16 @@ export function MenuManager() {
     }
     setSaving(true);
     setError('');
+    let imageUrl = form.image_url || null;
+    if (imageFile) {
+      try {
+        imageUrl = await uploadMenuImage(imageFile);
+      } catch (err) {
+        setError(`Image upload failed: ${err instanceof Error ? err.message : 'unknown error'}`);
+        setSaving(false);
+        return;
+      }
+    }
     const row = {
       sku: form.sku.trim(),
       name: form.name.trim(),
@@ -103,7 +116,7 @@ export function MenuManager() {
       price,
       sort_order: parseInt(form.sort_order, 10) || 0,
       description: form.description.trim() || null,
-      image_url: form.image_url.trim() || null,
+      image_url: imageUrl,
       available: form.available,
     };
     const { error: e } =
@@ -170,6 +183,7 @@ export function MenuManager() {
           onClick={() => {
             setEditingId('new');
             setForm({ ...emptyForm, category: catFilter !== 'All' ? catFilter : catNames[0] ?? '' });
+            setImageFile(null);
             setError('');
           }}
           className="bg-brand-red text-white font-heading text-sm px-6 py-2.5 tracking-widest rounded-sm hover:bg-primary hover:text-surface transition-colors whitespace-nowrap"
@@ -221,8 +235,22 @@ export function MenuManager() {
               <input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className={inputClass} />
             </div>
             <div className="sm:col-span-2">
-              <label className="block text-xs text-muted mb-1 tracking-wide">IMAGE URL</label>
-              <input value={form.image_url} onChange={e => setForm(f => ({ ...f, image_url: e.target.value }))} placeholder="https://…" className={inputClass} />
+              <label className="block text-xs text-muted mb-1 tracking-wide">IMAGE</label>
+              <div className="flex items-center gap-4">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={e => setImageFile(e.target.files?.[0] ?? null)}
+                  className="text-sm text-muted file:mr-4 file:border file:border-theme file:rounded-sm file:bg-surface file:px-4 file:py-2 file:font-heading file:text-xs file:tracking-widest file:text-primary hover:file:border-brand-red file:cursor-pointer"
+                />
+                {(imageFile || form.image_url) && (
+                  <img
+                    src={imageFile ? URL.createObjectURL(imageFile) : form.image_url}
+                    alt="Preview"
+                    className="h-14 w-14 object-cover rounded-sm border border-theme"
+                  />
+                )}
+              </div>
             </div>
             <label className="flex items-center gap-2 text-sm text-primary cursor-pointer">
               <input
