@@ -1,4 +1,5 @@
 import { MENU_ITEMS } from '@/lib/menuData';
+import { getSupabase } from '@/lib/supabase';
 import type {
   Category,
   MenuCard,
@@ -46,9 +47,18 @@ function cleanName(name: string): string {
     .trim();
 }
 
-/** All available menu items, ordered for display. Static — no backend. */
-export function getMenuItems(): MenuItem[] {
-  return MENU_ITEMS.filter(i => i.available);
+/** All menu items (incl. unavailable) — Supabase first, static file as fallback. */
+export async function getAllMenuItems(): Promise<MenuItem[]> {
+  const sb = getSupabase();
+  if (!sb) return MENU_ITEMS;
+  const { data, error } = await sb.from('menu_items').select('*').order('sort_order');
+  if (error || !data) return MENU_ITEMS;
+  return data as MenuItem[];
+}
+
+/** Available menu items, ordered for display. */
+export async function getMenuItems(): Promise<MenuItem[]> {
+  return (await getAllMenuItems()).filter(i => i.available);
 }
 
 /**

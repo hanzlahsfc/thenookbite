@@ -29,3 +29,4 @@ next-env.d.ts
 
 # Order data backup (contains customer phone numbers)
 db/backup-orders-*/
+supabase/.temp/

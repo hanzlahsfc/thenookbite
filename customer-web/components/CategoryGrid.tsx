@@ -1,20 +1,20 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { getMenuCategories, categoryLabel } from '@/lib/menuCategories';
-import { MENU_ITEMS } from '@/lib/menuData';
+import { getAllMenuItems } from '@/lib/menu';
 import { Reveal } from './Reveal';
 
 // Fallback imagery for a category added without its own picture
 const PLACEHOLDER = 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=600&q=75';
 
 
-export function CategoryGrid() {
-  const cats = getMenuCategories();
+export async function CategoryGrid() {
+  const [cats, items] = await Promise.all([getMenuCategories(), getAllMenuItems()]);
 
   // Live item counts — the old hardcoded ones had drifted badly (Appetizers
   // read "12 items" against 31 on the menu)
   const counts = new Map<string, number>();
-  for (const i of MENU_ITEMS) counts.set(i.category, (counts.get(i.category) ?? 0) + 1);
+  for (const i of items) counts.set(i.category, (counts.get(i.category) ?? 0) + 1);
 
   return (
     <section className="bg-surface py-14 sm:py-24">

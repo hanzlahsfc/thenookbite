@@ -2,19 +2,21 @@ import { getMenuItems, buildMenuCards } from '@/lib/menu';
 import { getMenuCategories, categoryLabel } from '@/lib/menuCategories';
 import { MenuBrowser } from '@/components/MenuBrowser';
 
-export default function MenuPage({
+export const dynamic = 'force-dynamic';
+
+export default async function MenuPage({
   searchParams,
 }: {
   searchParams: { category?: string };
 }) {
-  const cats = getMenuCategories();
+  const cats = await getMenuCategories();
   const categoryNames = cats.map(c => c.name);
   const labels = Object.fromEntries(cats.map(c => [c.name, categoryLabel(c)]));
 
   const rawCat = searchParams.category;
   const initialCategory = rawCat && categoryNames.includes(rawCat) ? rawCat : undefined;
 
-  const cards = buildMenuCards(getMenuItems());
+  const cards = buildMenuCards(await getMenuItems());
 
   // Include any category still present on an item, so a renamed or removed
   // category never leaves items unreachable from the tabs.

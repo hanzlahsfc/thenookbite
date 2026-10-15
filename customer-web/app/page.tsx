@@ -6,6 +6,8 @@ import { DealsBanner } from '@/components/DealsBanner';
 import { CategoryGrid } from '@/components/CategoryGrid';
 import { Benefits } from '@/components/Benefits';
 
+export const dynamic = 'force-dynamic';
+
 export default function HomePage() {
   return (
     <div>
